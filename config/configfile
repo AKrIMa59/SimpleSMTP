@@ -1,0 +1,7 @@
+#Paramètre SMTP
+SmtpServerUrl="smtp.domain.name"
+SmtpServerPort=465
+SSL=TRUE
+
+email="monemail@domain.name"
+pass="monmotdepasse"

@@ -1,0 +1,76 @@
+source /etc/ssmtp/config
+
+readonly TEMP_MAIL="/tmp/ssmtp-mail.txt"
+SmtpServerUrl="smtps://$SmtpServerUrl"
+
+function showHelp()
+{
+    echo "Syntaxe:"
+    echo "ssmtp --email <my-email> --object <my-object> --content <content-file>"
+    echo "OU"
+    echo "ssmtp -e <my-email> -o <my-object> -c <content-file>"
+    echo -e
+    echo "Arguments :"
+    echo "[OBLIGATOIRE] -e|--email : Adresse mail du destinataire"
+    echo "[OBLIGATOIRE] -o|--object : Objet du mail"
+    echo "[OBLIGATOIRE] -c|--content : Contenu du mail au format txt"
+    echo "[FACULTATIF]  -V|--verbose : Affichage du statut d'avancement"
+}
+
+options=$(getopt -l "email:,object:,content:,help,verbose" -o "e:o:c:hV" -a -- "$@")
+
+eval set -- "$options"
+
+while true 
+do
+    case $1 in
+        -h|--help) showHelp
+                exit 0
+        ;;
+        -e|--email) emailDest=$2
+        ;;
+        -o|--object) object=$2
+        ;;
+        -c|--content) content=$2
+        ;;
+        -V|--verbose) verbose=TRUE
+        ;;
+        --) 
+        shift
+        break 
+        ;;
+    esac
+    shift
+done
+
+if  [ -z $emailDest ] && [ -z $object ] && [ -z $content ]
+then
+    echo "Cette commande nécessite plusieurs arguments obligatoires, vous pouvez retrouver cette liste avec la commande ssmtp --help"
+    exit 0
+fi
+
+#Fonctionnalité verbose pas encore activé (en cours de dev)
+if [ -z $verbose ] 
+then
+    verbose=FALSE
+fi
+
+#Création du mail
+
+nameDest=`echo $emailDest | cut -d'@' -f 1`
+nameExpe=`echo $email | cut -d'@' -f 1`
+
+if [ -f $TEMP_MAIL ] 
+then
+    rm $TEMP_MAIL
+fi
+touch $TEMP_MAIL
+
+echo "From: "$nameExpe" <$email>" >> $TEMP_MAIL
+echo "To: "$nameDest" <$emailDest>" >> $TEMP_MAIL
+echo "Subject: $object" >> $TEMP_MAIL
+echo -e >> $TEMP_MAIL
+cat $content >> $TEMP_MAIL
+
+#Création de la commande curl
+curl --url $SmtpServerUrl:$SmtpServerPort --ssl-reqd --mail-from $email --mail-rcpt $emailDest --upload-file $TEMP_MAIL --user $email:$pass
